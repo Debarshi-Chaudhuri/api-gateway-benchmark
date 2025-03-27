@@ -4,82 +4,60 @@
   "api_id": "http-api-1",
   "org_id": "default",
   "use_keyless": true,
-  "definition": {
-    "location": "header",
-    "key": "version"
-  },
-  "version_data": {
-    "not_versioned": true,
-    "versions": {
-      "Default": {
-        "name": "Default",
-        "use_extended_paths": true
-      }
-    }
-  },
   "proxy": {
     "listen_path": "/http-api/",
     "target_url": "http://http-service:8000/",
     "strip_listen_path": true
   },
   "active": true,
-  "cache_options": {
-    "cache_timeout": 60,
-    "enable_cache": true,
-    "cache_all_safe_requests": false,
-    "cache_response_codes": [200]
-  },
   "global_rate_limit": {
     "rate": 10000,
     "per": 1
   },
-  "uptime_tests": {
-    "check_list": [
-      {
-        "url": "http://http-service:8000/health",
-        "method": "GET",
-        "headers": {},
-        "body": "",
-        "timeout": 10,
-        "check_interval": 10
-      }
-    ],
-    "config": {
-      "expire_utime_after": 300,
-      "service_discovery": {
-        "use_discovery_service": false
-      },
-      "recheck_wait": 30
-    }
-  },
+  "disable_rate_limit": false,
   "version_data": {
     "not_versioned": true,
     "versions": {
       "Default": {
         "name": "Default",
-        "expires": "",
-        "paths": {
-          "ignored": [],
-          "white_list": [],
-          "black_list": []
-        },
         "use_extended_paths": true,
         "extended_paths": {
-          "ignore": [
+          "circuit_breakers": [
             {
-              "path": "/health",
-              "method_actions": {
-                "GET": {
-                  "action": "no_action",
-                  "code": 200,
-                  "data": "",
-                  "headers": {}
-                }
-              }
+              "path": "",
+              "method": "",
+              "threshold_percent": 80,
+              "samples": 1000,
+              "return_to_service_after": 60
             }
           ]
         }
       }
+    }
+  },
+  "proxy": {
+    "listen_path": "/http-api/",
+    "target_url": "http://http-service:8000/",
+    "strip_listen_path": true,
+    "service_discovery": {
+      "use_discovery_service": false,
+      "query_endpoint": "",
+      "use_nested_query": false,
+      "parent_data_path": "",
+      "data_path": "",
+      "port_data_path": "",
+      "target_path": "",
+      "use_target_list": false,
+      "cache_timeout": 0,
+      "endpoint_returns_list": false
+    },
+    "transport": {
+      "ssl_insecure_skip_verify": false,
+      "ssl_ciphers": null,
+      "ssl_min_version": 0,
+      "ssl_max_version": 0,
+      "ssl_force_common_name_check": false,
+      "proxy_url": ""
     }
   }
 }

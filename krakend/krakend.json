@@ -33,12 +33,6 @@
           "host": ["http://http-service:8000"],
           "disable_host_sanitize": false,
           "extra_config": {
-            "qos/circuit-breaker": {
-              "interval": 60,
-              "timeout": 30,
-              "max_errors": 1000,
-              "log_level": "error"
-            },
             "qos/ratelimit/proxy": {
               "max_rate": 10000,
               "capacity": 10000
