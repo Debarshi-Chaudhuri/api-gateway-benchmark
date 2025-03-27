@@ -1,0 +1,29 @@
+```
+Starting benchmarks...
+
+Running HTTP benchmarks...
+
+** No rate limiting no caching
+
+Completed benchmark for tyk: 100000 requests, 95817 successful, 4183 failed, 982.67 RPS
+Completed benchmark for krakend: 100000 requests, 87947 successful, 12053 failed, 1238.64 RPS
++---------+----------+---------+--------+-----------+----------+------------+---------+
+| GATEWAY | REQUESTS | SUCCESS | FAILED | AVG TIME  | MIN TIME |  MAX TIME  |   RPS   |
++---------+----------+---------+--------+-----------+----------+------------+---------+
+| tyk     |   100000 |   95817 |   4183 | 183.95 ms | 50.48 ms | 1504.44 ms |  982.67 |
+| krakend |   100000 |   87947 |  12053 | 85.80 ms  | 50.43 ms | 1163.04 ms | 1238.64 |
++---------+----------+---------+--------+-----------+----------+------------+---------+
+
+
+** No rate limiting caching timeout 300s
+
+Completed benchmark for tyk: 100000 requests, 100000 successful, 0 failed, 4854.94 RPS
+Completed benchmark for krakend: 100000 requests, 100000 successful, 0 failed, 2387.53 RPS
++---------+----------+---------+--------+----------+----------+-----------+---------+
+| GATEWAY | REQUESTS | SUCCESS | FAILED | AVG TIME | MIN TIME | MAX TIME  |   RPS   |
++---------+----------+---------+--------+----------+----------+-----------+---------+
+| tyk     |   100000 |  100000 |      0 | 38.63 ms | 0.25 ms  | 910.27 ms | 4854.94 |
+| krakend |   100000 |  100000 |      0 | 81.16 ms | 50.50 ms | 450.55 ms | 2387.53 |
++---------+----------+---------+--------+----------+----------+-----------+---------+
+
+```

@@ -22,13 +22,12 @@
         "name": "Default",
         "use_extended_paths": true,
         "extended_paths": {
-          "circuit_breakers": [
+          "cache": [
             {
-              "path": "",
-              "method": "",
-              "threshold_percent": 80,
-              "samples": 1000,
-              "return_to_service_after": 60
+              "path": "/api/data",
+              "method": "GET",
+              "cache_response_codes": [200],
+              "cache_timeout": 60
             }
           ]
         }
@@ -59,5 +58,13 @@
       "ssl_force_common_name_check": false,
       "proxy_url": ""
     }
+  },
+  "cache_options": {
+    "cache_timeout": 60,
+    "enable_cache": true,
+    "cache_all_safe_requests": false,
+    "cache_response_codes": [200],
+    "enable_upstream_cache_control": true,
+    "cache_control_ttl_header": "Cache-Control"
   }
 }

@@ -4,7 +4,7 @@
   "name": "KrakenD API Gateway",
   "port": 8081,
   "timeout": "3s",
-  "cache_ttl": "300s",
+  "cache_ttl": "60s",
   "output_encoding": "json",
   "extra_config": {
     "telemetry/logging": {
@@ -25,6 +25,8 @@
       "method": "GET",
       "output_encoding": "json",
       "input_query_strings": ["*"],
+      "cache_ttl": "60s",
+      "concurrent_calls": 1,
       "backend": [
         {
           "url_pattern": "/api/data",
@@ -32,6 +34,7 @@
           "method": "GET",
           "host": ["http://http-service:8000"],
           "disable_host_sanitize": false,
+          "cache_ttl": "60s",
           "extra_config": {
             "qos/ratelimit/proxy": {
               "max_rate": 10000,
@@ -39,7 +42,17 @@
             }
           }
         }
-      ]
+      ],
+      "extra_config": {
+        "proxy": {
+          "sequential": true
+        },
+        "qos/ratelimit/router": {
+          "max_rate": 10000,
+          "client_max_rate": 10000,
+          "strategy": "ip"
+        }
+      }
     },
     {
       "endpoint": "/health",
