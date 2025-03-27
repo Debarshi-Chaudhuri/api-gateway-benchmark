@@ -1,9 +1,8 @@
-module github.com/example/api-gateway-benchmark
+module api-gateway-benchmark
 
 go 1.21
 
 require (
-	github.com/brianvoe/gofakeit/v6 v6.28.0
 	github.com/olekukonko/tablewriter v0.0.5
 	google.golang.org/grpc v1.60.1
 )

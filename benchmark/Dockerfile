@@ -2,12 +2,15 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
+# Copy the root go.mod and go.sum
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Copy the entire project
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o benchmark .
+# Build the application
+RUN go build -o benchmark ./benchmark
 
 FROM alpine:latest
 

@@ -3,26 +3,28 @@ FROM golang:1.21-alpine AS builder
 WORKDIR /app
 
 # Install protoc
-RUN apk add --no-cache protobuf protobuf-dev
+RUN apk add --no-cache protobuf protobuf-dev make
 
 # Install Go gRPC tools
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0
 RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 
+# Copy the root go.mod and go.sum
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code and proto files
-COPY . .
+# Copy proto files and generate them first
+COPY backend-services/grpc-service/proto/ ./backend-services/grpc-service/proto/
+COPY Makefile ./
 
 # Generate protobuf code
-RUN mkdir -p proto/servicepb
-RUN protoc --go_out=. --go_opt=paths=source_relative \
-    --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-    proto/service.proto
+RUN make proto
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o grpc-service ./server
+# Copy the rest of the application
+COPY . .
+
+# Build the gRPC service
+RUN go build -o grpc-service ./backend-services/grpc-service/server
 
 FROM alpine:latest
 

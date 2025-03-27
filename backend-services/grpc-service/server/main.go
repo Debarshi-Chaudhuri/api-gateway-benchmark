@@ -9,7 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	pb "github.com/example/grpc-service/proto/servicepb"
+	pb "api-gateway-setup/backend-services/grpc-service/proto/servicepb"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

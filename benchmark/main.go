@@ -58,39 +58,39 @@ func main() {
 	// HTTP Benchmarks
 	if config.AuthTest {
 		fmt.Println("\nRunning Authentication Tests (HTTP)...")
-		results = append(results, runHTTPBenchmark(config, tokens, "auth"))
+		results = append(results, runHTTPBenchmark(config, tokens, "auth")...)
 	}
 
 	if config.RateLimitTest {
 		fmt.Println("\nRunning Rate Limiting Tests (HTTP)...")
-		results = append(results, runHTTPBenchmark(config, tokens, "ratelimit"))
+		results = append(results, runHTTPBenchmark(config, tokens, "ratelimit")...)
 	}
 
 	if config.ResilienceTest {
 		fmt.Println("\nRunning Resilience Tests (HTTP)...")
-		results = append(results, runHTTPBenchmark(config, tokens, "resilience"))
+		results = append(results, runHTTPBenchmark(config, tokens, "resilience")...)
 	}
 
 	if config.ProxyTest {
 		fmt.Println("\nRunning API Proxying Tests (HTTP)...")
-		results = append(results, runHTTPBenchmark(config, tokens, "proxy"))
+		results = append(results, runHTTPBenchmark(config, tokens, "proxy")...)
 	}
 
 	// gRPC Benchmarks
 	if config.GrpcEnabled {
 		if config.AuthTest {
 			fmt.Println("\nRunning Authentication Tests (gRPC)...")
-			results = append(results, runGRPCBenchmark(config, tokens, "auth"))
+			results = append(results, runGRPCBenchmark(config, tokens, "auth")...)
 		}
 
 		if config.RateLimitTest {
 			fmt.Println("\nRunning Rate Limiting Tests (gRPC)...")
-			results = append(results, runGRPCBenchmark(config, tokens, "ratelimit"))
+			results = append(results, runGRPCBenchmark(config, tokens, "ratelimit")...)
 		}
 
 		if config.ProxyTest {
 			fmt.Println("\nRunning API Proxying Tests (gRPC)...")
-			results = append(results, runGRPCBenchmark(config, tokens, "proxy"))
+			results = append(results, runGRPCBenchmark(config, tokens, "proxy")...)
 		}
 	}
 

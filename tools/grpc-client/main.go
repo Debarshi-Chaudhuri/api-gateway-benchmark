@@ -7,7 +7,8 @@ import (
 	"log"
 	"time"
 
-	pb "github.com/example/grpc-service/proto/servicepb"
+	pb "api-gateway-benchmark/backend-services/grpc-service/proto/servicepb"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"

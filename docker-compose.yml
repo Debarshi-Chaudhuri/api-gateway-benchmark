@@ -4,8 +4,8 @@ services:
   # Backend Services
   http-service:
     build:
-      context: ./backend-services/http-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend-services/http-service/Dockerfile
     environment:
       - PORT=8000
     networks:
@@ -19,8 +19,8 @@ services:
 
   grpc-service:
     build:
-      context: ./backend-services/grpc-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend-services/grpc-service/Dockerfile
     environment:
       - PORT=9000
     networks:
@@ -82,8 +82,8 @@ services:
   # Benchmark service
   benchmark:
     build:
-      context: ./benchmark
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: benchmark/Dockerfile
     networks:
       - api-network
     depends_on:
