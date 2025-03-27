@@ -1,0 +1,19 @@
+{
+  "url_pattern": "/api/data",
+  "encoding": "json",
+  "method": "GET",
+  "host": ["http://http-service:8000"],
+  "disable_host_sanitize": false,
+  "extra_config": {
+    "qos/circuit-breaker": {
+      "interval": 60,
+      "timeout": 10,
+      "max_errors": 3,
+      "log_level": "error"
+    },
+    "qos/ratelimit/proxy": {
+      "max_rate": 50,
+      "capacity": 1
+    }
+  }
+}

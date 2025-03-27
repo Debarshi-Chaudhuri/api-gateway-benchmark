@@ -1,0 +1,100 @@
+version: '3'
+
+services:
+  # Backend Services
+  http-service:
+    build:
+      context: ./backend-services/http-service
+      dockerfile: Dockerfile
+    environment:
+      - PORT=8000
+    networks:
+      - api-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  grpc-service:
+    build:
+      context: ./backend-services/grpc-service
+      dockerfile: Dockerfile
+    environment:
+      - PORT=9000
+    networks:
+      - api-network
+    restart: unless-stopped
+
+  # Tyk Gateway
+  redis:
+    image: redis:alpine
+    networks:
+      - api-network
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  tyk-gateway:
+    build:
+      context: ./tyk
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - api-network
+    environment:
+      - TYK_GW_STORAGE_HOST=redis
+    depends_on:
+      - redis
+      - http-service
+      - grpc-service
+    restart: unless-stopped
+
+  # KrakenD Gateway
+  krakend:
+    build:
+      context: ./krakend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+      - "8090:8090"  # Metrics endpoint
+    networks:
+      - api-network
+    depends_on:
+      - http-service
+      - grpc-service
+      - krakend-grpc-gateway
+    restart: unless-stopped
+
+  # KrakenD gRPC Gateway (needed for KrakenD to proxy gRPC)
+  krakend-grpc-gateway:
+    image: devopsfaith/krakend-grpc-gateway:latest
+    networks:
+      - api-network
+    environment:
+      - GRPC_SERVER=grpc-service:9000
+    depends_on:
+      - grpc-service
+    restart: unless-stopped
+
+  # Benchmark service
+  benchmark:
+    build:
+      context: ./benchmark
+      dockerfile: Dockerfile
+    networks:
+      - api-network
+    depends_on:
+      - tyk-gateway
+      - krakend
+    volumes:
+      - ./benchmark/results:/results
+
+networks:
+  api-network:
+    driver: bridge
+
+volumes:
+  redis-data:
