@@ -1,16 +1,25 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
+
+	pb "api-gateway-benchmark/backend-services/grpc-service/proto"
 )
 
 type BenchmarkConfig struct {
@@ -28,6 +37,7 @@ type BenchmarkConfig struct {
 	ResilienceTest bool
 	AuthTest       bool
 	ProxyTest      bool
+	RunTests       bool // New flag to run Go tests
 }
 
 type BenchmarkResult struct {
@@ -46,6 +56,12 @@ type BenchmarkResult struct {
 
 func main() {
 	config := parseFlags()
+
+	// Run tests if requested
+	if config.RunTests {
+		runGoTests()
+		return
+	}
 
 	// Create JWT tokens for authentication tests
 	tokens := generateTokens(config.TokenCount, config.JWTSecret)
@@ -114,6 +130,7 @@ func parseFlags() BenchmarkConfig {
 	jwtSecret := flag.String("jwtsecret", "test-secret-key-for-benchmark", "Secret key for JWT tokens")
 	outputFile := flag.String("output", "results/benchmark_results.json", "Output file for results")
 	grpcEnabled := flag.Bool("grpc", true, "Enable gRPC tests")
+	runTests := flag.Bool("test", false, "Run Go tests instead of benchmarks")
 
 	flag.Parse()
 
@@ -128,6 +145,7 @@ func parseFlags() BenchmarkConfig {
 		JWTSecret:      *jwtSecret,
 		OutputFile:     *outputFile,
 		GrpcEnabled:    *grpcEnabled,
+		RunTests:       *runTests,
 	}
 
 	// Set test flags based on scenario
@@ -191,8 +209,8 @@ func runHTTPBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 		start := time.Now()
 		var wg sync.WaitGroup
 		requestsPerWorker := config.RequestCount / config.Concurrency
-		results := make(chan time.Duration, config.RequestCount)
-		errors := make(chan error, config.RequestCount)
+		resultsChan := make(chan time.Duration, config.RequestCount)
+		errorsChan := make(chan error, config.RequestCount)
 
 		for i := 0; i < config.Concurrency; i++ {
 			wg.Add(1)
@@ -205,7 +223,7 @@ func runHTTPBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 				for j := 0; j < requestsPerWorker; j++ {
 					req, err := http.NewRequest("GET", endpoint, nil)
 					if err != nil {
-						errors <- err
+						errorsChan <- err
 						continue
 					}
 
@@ -220,14 +238,14 @@ func runHTTPBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 					reqDuration := time.Since(reqStart)
 
 					if err != nil {
-						errors <- err
+						errorsChan <- err
 						continue
 					}
 
 					if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-						results <- reqDuration
+						resultsChan <- reqDuration
 					} else {
-						errors <- fmt.Errorf("request failed with status code: %d", resp.StatusCode)
+						errorsChan <- fmt.Errorf("request failed with status code: %d", resp.StatusCode)
 					}
 					resp.Body.Close()
 				}
@@ -235,14 +253,15 @@ func runHTTPBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 		}
 
 		wg.Wait()
-		close(results)
-		close(errors)
+		close(resultsChan)
+		close(errorsChan)
 
 		// Process results
 		totalTime := time.Duration(0)
 		successCount := 0
+		errorCount := 0
 
-		for duration := range results {
+		for duration := range resultsChan {
 			totalTime += duration
 			successCount++
 
@@ -255,10 +274,14 @@ func runHTTPBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 			}
 		}
 
+		for range errorsChan {
+			errorCount++
+		}
+
 		// Calculate stats
 		result.TotalDuration = time.Since(start)
 		result.SuccessCount = successCount
-		result.FailureCount = len(errors)
+		result.FailureCount = errorCount
 
 		if successCount > 0 {
 			result.AvgResponseTime = totalTime / time.Duration(successCount)
@@ -267,7 +290,7 @@ func runHTTPBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 
 		results = append(results, result)
 		fmt.Printf("Completed benchmark for %s (%s): %d requests, %d successful, %d failed, %.2f RPS\n",
-			gateway, scenario, config.RequestCount, successCount, len(errors), result.RPS)
+			gateway, scenario, config.RequestCount, successCount, errorCount, result.RPS)
 	}
 
 	return results
@@ -276,25 +299,205 @@ func runHTTPBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 func runGRPCBenchmark(config BenchmarkConfig, tokens []string, scenario string) []BenchmarkResult {
 	var results []BenchmarkResult
 
-	// This is a simplified version - in a real benchmark you'd implement actual gRPC clients
-	// For this example, we'll just create placeholder results
+	// Define endpoints for each gateway and scenario
+	type endpointConfig struct {
+		useHTTP bool // true for HTTP-to-gRPC (KrakenD), false for direct gRPC (Tyk)
+		host    string
+		path    string
+		method  string
+	}
 
-	for _, gateway := range []string{"tyk", "krakend"} {
+	endpoints := map[string]endpointConfig{
+		"tyk":     {useHTTP: false, host: "", path: "", method: ""},
+		"krakend": {useHTTP: true, host: "", path: "", method: ""},
+	}
+
+	switch scenario {
+	case "auth":
+		endpoints["tyk"] = endpointConfig{
+			useHTTP: false,
+			host:    config.TykBaseURL,
+			path:    "grpc-api",
+			method:  "GetProtectedData",
+		}
+		endpoints["krakend"] = endpointConfig{
+			useHTTP: true,
+			host:    config.KrakendBaseURL,
+			path:    "/grpc/protected",
+			method:  "GetProtectedData",
+		}
+	case "ratelimit", "proxy":
+		endpoints["tyk"] = endpointConfig{
+			useHTTP: false,
+			host:    config.TykBaseURL,
+			path:    "grpc-api",
+			method:  "GetData",
+		}
+		endpoints["krakend"] = endpointConfig{
+			useHTTP: true,
+			host:    config.KrakendBaseURL,
+			path:    "/grpc/data",
+			method:  "GetData",
+		}
+	}
+
+	for gateway, endpoint := range endpoints {
 		result := BenchmarkResult{
 			Gateway:         gateway,
 			Scenario:        scenario,
 			Protocol:        "gRPC",
 			RequestCount:    config.RequestCount,
-			SuccessCount:    config.RequestCount, // Simplified
-			FailureCount:    0,
-			TotalDuration:   time.Second * 5,                    // Placeholder
-			AvgResponseTime: time.Millisecond * 50,              // Placeholder
-			MinResponseTime: time.Millisecond * 10,              // Placeholder
-			MaxResponseTime: time.Millisecond * 200,             // Placeholder
-			RPS:             float64(config.RequestCount) / 5.0, // Placeholder
+			MinResponseTime: time.Hour, // Initialize with a large value
+		}
+
+		start := time.Now()
+		var wg sync.WaitGroup
+		requestsPerWorker := config.RequestCount / config.Concurrency
+		resultsChan := make(chan time.Duration, config.RequestCount)
+		errorsChan := make(chan error, config.RequestCount)
+
+		for i := 0; i < config.Concurrency; i++ {
+			wg.Add(1)
+			go func(workerID int) {
+				defer wg.Done()
+
+				if endpoint.useHTTP {
+					// HTTP-to-gRPC for KrakenD
+					client := &http.Client{
+						Timeout: config.Timeout,
+					}
+
+					for j := 0; j < requestsPerWorker; j++ {
+						// Prepare JSON request body
+						jsonBody := []byte(`{"request_id": "req-` + fmt.Sprintf("%d-%d", workerID, j) + `"}`)
+						req, err := http.NewRequest("POST", endpoint.host+endpoint.path, bytes.NewBuffer(jsonBody))
+						if err != nil {
+							errorsChan <- err
+							continue
+						}
+
+						req.Header.Set("Content-Type", "application/json")
+
+						// Add authorization if testing auth
+						if scenario == "auth" || scenario == "ratelimit" {
+							tokenIndex := (workerID*requestsPerWorker + j) % len(tokens)
+							req.Header.Set("Authorization", tokens[tokenIndex])
+						}
+
+						reqStart := time.Now()
+						resp, err := client.Do(req)
+						reqDuration := time.Since(reqStart)
+
+						if err != nil {
+							errorsChan <- err
+							continue
+						}
+
+						if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+							resultsChan <- reqDuration
+						} else {
+							errorsChan <- fmt.Errorf("request failed with status code: %d", resp.StatusCode)
+						}
+						resp.Body.Close()
+					}
+				} else {
+					// Direct gRPC for Tyk
+					// Parse host:port from URL
+					url := strings.TrimPrefix(endpoint.host, "http://")
+					url = strings.TrimPrefix(url, "https://")
+					hostParts := strings.Split(url, ":")
+					host := hostParts[0]
+					port := "8080" // Default
+					if len(hostParts) > 1 {
+						port = hostParts[1]
+					}
+
+					serverAddr := fmt.Sprintf("%s:%s", host, port)
+					conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+					if err != nil {
+						for j := 0; j < requestsPerWorker; j++ {
+							errorsChan <- fmt.Errorf("failed to connect to gRPC server: %v", err)
+						}
+						return
+					}
+					defer conn.Close()
+
+					client := pb.NewDataServiceClient(conn)
+
+					for j := 0; j < requestsPerWorker; j++ {
+						ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
+
+						// Add authorization if testing auth
+						if scenario == "auth" || scenario == "ratelimit" {
+							tokenIndex := (workerID*requestsPerWorker + j) % len(tokens)
+							ctx = metadata.AppendToOutgoingContext(ctx, "Authorization", tokens[tokenIndex])
+						}
+
+						reqStart := time.Now()
+						var err error
+
+						request := &pb.DataRequest{
+							RequestId: fmt.Sprintf("req-%d-%d", workerID, j),
+						}
+
+						if endpoint.method == "GetProtectedData" {
+							_, err = client.GetProtectedData(ctx, request)
+						} else {
+							_, err = client.GetData(ctx, request)
+						}
+
+						reqDuration := time.Since(reqStart)
+						cancel()
+
+						if err != nil {
+							errorsChan <- err
+						} else {
+							resultsChan <- reqDuration
+						}
+					}
+				}
+			}(i)
+		}
+
+		wg.Wait()
+		close(resultsChan)
+		close(errorsChan)
+
+		// Process results
+		totalTime := time.Duration(0)
+		successCount := 0
+		errorCount := 0
+
+		for duration := range resultsChan {
+			totalTime += duration
+			successCount++
+
+			if duration < result.MinResponseTime {
+				result.MinResponseTime = duration
+			}
+
+			if duration > result.MaxResponseTime {
+				result.MaxResponseTime = duration
+			}
+		}
+
+		for range errorsChan {
+			errorCount++
+		}
+
+		// Calculate stats
+		result.TotalDuration = time.Since(start)
+		result.SuccessCount = successCount
+		result.FailureCount = errorCount
+
+		if successCount > 0 {
+			result.AvgResponseTime = totalTime / time.Duration(successCount)
+			result.RPS = float64(successCount) / result.TotalDuration.Seconds()
 		}
 
 		results = append(results, result)
+		fmt.Printf("Completed benchmark for %s (%s): %d requests, %d successful, %d failed, %.2f RPS\n",
+			gateway, scenario, config.RequestCount, successCount, errorCount, result.RPS)
 	}
 
 	return results
@@ -340,4 +543,19 @@ func saveResults(results []BenchmarkResult, filename string) {
 	}
 
 	fmt.Printf("Results saved to %s\n", filename)
+}
+
+func runGoTests() {
+	fmt.Println("Running Go tests...")
+
+	cmd := exec.Command("go", "test", "./scenarios/...", "-v")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Tests failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Tests completed successfully")
 }
