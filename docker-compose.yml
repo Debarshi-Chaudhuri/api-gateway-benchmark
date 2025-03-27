@@ -6,6 +6,11 @@ services:
     image: redis:alpine
     networks:
       - api-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   # Backend Service
   http-service:
@@ -18,10 +23,19 @@ services:
       - api-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      interval: 5s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
+    # Use host mode for better performance during benchmarks
+    # This exposes the service directly on host port 8000
+    ports:
+      - "8000:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Tyk Gateway
   tyk-gateway:
@@ -32,9 +46,16 @@ services:
     networks:
       - api-network
     depends_on:
-      - http-service
-      - redis
+      http-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # KrakenD Gateway
   krakend:
@@ -45,8 +66,14 @@ services:
     networks:
       - api-network
     depends_on:
-      - http-service
+      http-service:
+        condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Benchmark service
   benchmark:
@@ -56,14 +83,13 @@ services:
     networks:
       - api-network
     depends_on:
-      - tyk-gateway
-      - krakend
+      tyk-gateway:
+        condition: service_started
+      krakend:
+        condition: service_started
     volumes:
       - ./results:/results
 
 networks:
   api-network:
     driver: bridge
-
-volumes:
-  results:
