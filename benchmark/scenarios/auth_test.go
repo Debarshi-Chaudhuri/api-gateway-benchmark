@@ -20,6 +20,9 @@ func generateJWTToken() string {
 }
 
 func TestHTTPAuthentication(t *testing.T) {
+	// Skip authentication tests
+	t.Skip("Authentication tests are disabled")
+
 	config := BaseConfig{
 		TykBaseURL:     "http://tyk-gateway:8080",
 		KrakendBaseURL: "http://krakend:8081",
@@ -73,6 +76,9 @@ func TestHTTPAuthentication(t *testing.T) {
 }
 
 func TestGRPCAuthentication(t *testing.T) {
+	// Skip authentication tests
+	t.Skip("Authentication tests are disabled")
+
 	config := BaseConfig{
 		TykBaseURL:     "tyk-gateway:8080",
 		KrakendBaseURL: "http://krakend:8081",

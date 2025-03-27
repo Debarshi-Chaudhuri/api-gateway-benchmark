@@ -1,5 +1,5 @@
 {
-  "$schema": "https://www.krakend.io/schema/krakend.json",
+  "$schema": "https://www.krakend.io/schema/v2.9/krakend.json",
   "version": 3,
   "name": "KrakenD API Gateway",
   "port": 8081,
@@ -64,9 +64,9 @@
           "disable_host_sanitize": false,
           "extra_config": {
             "qos/circuit-breaker": {
-              "interval": 60,
-              "timeout": 10,
-              "max_errors": 3,
+              "interval": 120,
+              "timeout": 30,
+              "max_errors": 10,
               "log_level": "error"
             },
             "qos/ratelimit/proxy": {
@@ -81,15 +81,9 @@
           "max_rate": 100,
           "client_max_rate": 10,
           "strategy": "ip"
-        },
-        "auth/validator": {
-          "alg": "HS256",
-          "jwk_url": "",
-          "disable_jwk_security": true,
-          "operation_debug": true
         }
       }
-    },
+    },  
     {
       "endpoint": "/http/protected",
       "method": "GET",
@@ -149,9 +143,9 @@
           "disable_host_sanitize": false,
           "extra_config": {
             "qos/circuit-breaker": {
-              "interval": 60,
-              "timeout": 10,
-              "max_errors": 3,
+              "interval": 120,
+              "timeout": 30,
+              "max_errors": 10,
               "log_level": "error"
             },
             "qos/ratelimit/proxy": {

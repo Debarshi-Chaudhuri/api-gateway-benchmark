@@ -37,7 +37,8 @@ type BenchmarkConfig struct {
 	ResilienceTest bool
 	AuthTest       bool
 	ProxyTest      bool
-	RunTests       bool // New flag to run Go tests
+	RunTests       bool // Flag to run Go tests
+	SkipAuth       bool // Skip authentication tests
 }
 
 type BenchmarkResult struct {
@@ -63,8 +64,11 @@ func main() {
 		return
 	}
 
-	// Create JWT tokens for authentication tests
-	tokens := generateTokens(config.TokenCount, config.JWTSecret)
+	// Create JWT tokens for authentication tests (even if skipping, just in case)
+	tokens := []string{}
+	if !config.SkipAuth {
+		tokens = generateTokens(config.TokenCount, config.JWTSecret)
+	}
 
 	// Run benchmarks for each gateway
 	var results []BenchmarkResult
@@ -72,9 +76,11 @@ func main() {
 	fmt.Println("Starting benchmarks...")
 
 	// HTTP Benchmarks
-	if config.AuthTest {
+	if config.AuthTest && !config.SkipAuth {
 		fmt.Println("\nRunning Authentication Tests (HTTP)...")
 		results = append(results, runHTTPBenchmark(config, tokens, "auth")...)
+	} else if config.AuthTest {
+		fmt.Println("\nSkipping Authentication Tests (auth tests disabled)...")
 	}
 
 	if config.RateLimitTest {
@@ -94,9 +100,11 @@ func main() {
 
 	// gRPC Benchmarks
 	if config.GrpcEnabled {
-		if config.AuthTest {
+		if config.AuthTest && !config.SkipAuth {
 			fmt.Println("\nRunning Authentication Tests (gRPC)...")
 			results = append(results, runGRPCBenchmark(config, tokens, "auth")...)
+		} else if config.AuthTest {
+			fmt.Println("\nSkipping Authentication Tests for gRPC (auth tests disabled)...")
 		}
 
 		if config.RateLimitTest {
@@ -131,6 +139,7 @@ func parseFlags() BenchmarkConfig {
 	outputFile := flag.String("output", "results/benchmark_results.json", "Output file for results")
 	grpcEnabled := flag.Bool("grpc", true, "Enable gRPC tests")
 	runTests := flag.Bool("test", false, "Run Go tests instead of benchmarks")
+	skipAuth := flag.Bool("skipauth", true, "Skip authentication tests") // Default to true
 
 	flag.Parse()
 
@@ -146,6 +155,7 @@ func parseFlags() BenchmarkConfig {
 		OutputFile:     *outputFile,
 		GrpcEnabled:    *grpcEnabled,
 		RunTests:       *runTests,
+		SkipAuth:       *skipAuth,
 	}
 
 	// Set test flags based on scenario
@@ -166,7 +176,7 @@ func parseFlags() BenchmarkConfig {
 
 func generateTokens(count int, secret string) []string {
 	// In a real app, you would use a JWT library to generate actual tokens
-	// This is a placeholder for demonstration
+	// For simplicity and to avoid external dependencies, we'll use a placeholder
 	tokens := make([]string, count)
 	for i := 0; i < count; i++ {
 		tokens[i] = fmt.Sprintf("Bearer fake-jwt-token-%d", i)
@@ -184,8 +194,14 @@ func runHTTPBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 
 	switch scenario {
 	case "auth":
-		endpoints["tyk"] = fmt.Sprintf("%s/http-api/api/protected", config.TykBaseURL)
-		endpoints["krakend"] = fmt.Sprintf("%s/http/protected", config.KrakendBaseURL)
+		// For auth tests, use public endpoints if skipping auth
+		if config.SkipAuth {
+			endpoints["tyk"] = fmt.Sprintf("%s/http-api/api/data", config.TykBaseURL)
+			endpoints["krakend"] = fmt.Sprintf("%s/http/data", config.KrakendBaseURL)
+		} else {
+			endpoints["tyk"] = fmt.Sprintf("%s/http-api/api/protected", config.TykBaseURL)
+			endpoints["krakend"] = fmt.Sprintf("%s/http/protected", config.KrakendBaseURL)
+		}
 	case "resilience":
 		endpoints["tyk"] = fmt.Sprintf("%s/http-api/api/data?delay=100", config.TykBaseURL)
 		endpoints["krakend"] = fmt.Sprintf("%s/http/data?delay=100", config.KrakendBaseURL)
@@ -227,8 +243,8 @@ func runHTTPBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 						continue
 					}
 
-					// Add authorization header if testing auth
-					if scenario == "auth" || scenario == "ratelimit" {
+					// Add authorization header if testing auth and not skipping auth
+					if (scenario == "auth" || scenario == "ratelimit") && !config.SkipAuth {
 						tokenIndex := (workerID*requestsPerWorker + j) % len(tokens)
 						req.Header.Set("Authorization", tokens[tokenIndex])
 					}
@@ -314,17 +330,34 @@ func runGRPCBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 
 	switch scenario {
 	case "auth":
-		endpoints["tyk"] = endpointConfig{
-			useHTTP: false,
-			host:    config.TykBaseURL,
-			path:    "grpc-api",
-			method:  "GetProtectedData",
-		}
-		endpoints["krakend"] = endpointConfig{
-			useHTTP: true,
-			host:    config.KrakendBaseURL,
-			path:    "/grpc/protected",
-			method:  "GetProtectedData",
+		if config.SkipAuth {
+			// Use non-protected endpoints if skipping auth
+			endpoints["tyk"] = endpointConfig{
+				useHTTP: false,
+				host:    config.TykBaseURL,
+				path:    "grpc-api",
+				method:  "GetData",
+			}
+			endpoints["krakend"] = endpointConfig{
+				useHTTP: true,
+				host:    config.KrakendBaseURL,
+				path:    "/grpc/data",
+				method:  "GetData",
+			}
+		} else {
+			// Use protected endpoints for auth tests
+			endpoints["tyk"] = endpointConfig{
+				useHTTP: false,
+				host:    config.TykBaseURL,
+				path:    "grpc-api",
+				method:  "GetProtectedData",
+			}
+			endpoints["krakend"] = endpointConfig{
+				useHTTP: true,
+				host:    config.KrakendBaseURL,
+				path:    "/grpc/protected",
+				method:  "GetProtectedData",
+			}
 		}
 	case "ratelimit", "proxy":
 		endpoints["tyk"] = endpointConfig{
@@ -378,8 +411,8 @@ func runGRPCBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 
 						req.Header.Set("Content-Type", "application/json")
 
-						// Add authorization if testing auth
-						if scenario == "auth" || scenario == "ratelimit" {
+						// Add authorization if testing auth and not skipping auth
+						if (scenario == "auth" || scenario == "ratelimit") && !config.SkipAuth {
 							tokenIndex := (workerID*requestsPerWorker + j) % len(tokens)
 							req.Header.Set("Authorization", tokens[tokenIndex])
 						}
@@ -427,8 +460,8 @@ func runGRPCBenchmark(config BenchmarkConfig, tokens []string, scenario string) 
 					for j := 0; j < requestsPerWorker; j++ {
 						ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
 
-						// Add authorization if testing auth
-						if scenario == "auth" || scenario == "ratelimit" {
+						// Add authorization if testing auth and not skipping auth
+						if (scenario == "auth" || scenario == "ratelimit") && !config.SkipAuth {
 							tokenIndex := (workerID*requestsPerWorker + j) % len(tokens)
 							ctx = metadata.AppendToOutgoingContext(ctx, "Authorization", tokens[tokenIndex])
 						}

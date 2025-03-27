@@ -70,10 +70,13 @@ services:
 
   # KrakenD gRPC Gateway (needed for KrakenD to proxy gRPC)
   krakend-grpc-gateway:
-    image: devopsfaith/krakend-grpc-gateway:latest
+    build:
+      context: .
+      dockerfile: custom-grpc-gateway/Dockerfile
     networks:
       - api-network
     environment:
+      - PORT=8090
       - GRPC_SERVER=grpc-service:9000
     depends_on:
       - grpc-service

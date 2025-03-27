@@ -1,4 +1,4 @@
-FROM tykio/tyk-gateway:v5.0.3-pro
+FROM tykio/tyk-gateway:v5.0.3
 
 # Copy Tyk configuration
 COPY tyk.conf /opt/tyk-gateway/tyk.conf
