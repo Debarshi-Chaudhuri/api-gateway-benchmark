@@ -10,61 +10,33 @@
     "strip_listen_path": true
   },
   "active": true,
+  "disable_rate_limit": false,
+  
+
   "global_rate_limit": {
-    "rate": 10000,
+    "rate": 20,
     "per": 1
   },
-  "disable_rate_limit": false,
-  "version_data": {
-    "not_versioned": true,
-    "versions": {
-      "Default": {
-        "name": "Default",
-        "use_extended_paths": true,
-        "extended_paths": {
-          "cache": [
-            {
-              "path": "/api/data",
-              "method": "GET",
-              "cache_response_codes": [200],
-              "cache_timeout": 60
-            }
-          ]
-        }
+  
+
+  "extended_paths": {
+    "ignored": [],
+    "white_list": [],
+    "black_list": [],
+    "rate_limit": [
+      {
+        "path": "/api/data",
+        "method": "GET",
+        "rate": 20,
+        "per": 1,
+        "throttle_interval": 0,
+        "throttle_retry_limit": 0,
+        "max_query_depth": 0,
+        "throttle_policy": "",
+        "throttle_data": {},
+        "enable_max_burst": true,
+        "max_burst_multiplier": 2.5
       }
-    }
-  },
-  "proxy": {
-    "listen_path": "/http-api/",
-    "target_url": "http://http-service:8000/",
-    "strip_listen_path": true,
-    "service_discovery": {
-      "use_discovery_service": false,
-      "query_endpoint": "",
-      "use_nested_query": false,
-      "parent_data_path": "",
-      "data_path": "",
-      "port_data_path": "",
-      "target_path": "",
-      "use_target_list": false,
-      "cache_timeout": 0,
-      "endpoint_returns_list": false
-    },
-    "transport": {
-      "ssl_insecure_skip_verify": false,
-      "ssl_ciphers": null,
-      "ssl_min_version": 0,
-      "ssl_max_version": 0,
-      "ssl_force_common_name_check": false,
-      "proxy_url": ""
-    }
-  },
-  "cache_options": {
-    "cache_timeout": 60,
-    "enable_cache": true,
-    "cache_all_safe_requests": false,
-    "cache_response_codes": [200],
-    "enable_upstream_cache_control": true,
-    "cache_control_ttl_header": "Cache-Control"
+    ]
   }
 }

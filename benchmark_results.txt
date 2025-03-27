@@ -1,6 +1,24 @@
+```
 Starting benchmarks...
 
 Running HTTP benchmarks...
+
+** COMMAND: docker compose run benchmark --concurrency=200 --requests=100000 > benchmark_results.txt
+** No rate limiting no caching
+
+Completed benchmark for tyk: 100000 requests, 95817 successful, 4183 failed, 982.67 RPS
+Completed benchmark for krakend: 100000 requests, 87947 successful, 12053 failed, 1238.64 RPS
++---------+----------+---------+--------+-----------+----------+------------+---------+
+| GATEWAY | REQUESTS | SUCCESS | FAILED | AVG TIME  | MIN TIME |  MAX TIME  |   RPS   |
++---------+----------+---------+--------+-----------+----------+------------+---------+
+| tyk     |   100000 |   95817 |   4183 | 183.95 ms | 50.48 ms | 1504.44 ms |  982.67 |
+| krakend |   100000 |   87947 |  12053 | 85.80 ms  | 50.43 ms | 1163.04 ms | 1238.64 |
++---------+----------+---------+--------+-----------+----------+------------+---------+
+
+
+** COMMAND: docker compose run benchmark --concurrency=200 --requests=100000 > benchmark_results.txt
+** No rate limiting caching timeout 300s
+
 Completed benchmark for tyk: 100000 requests, 100000 successful, 0 failed, 4854.94 RPS
 Completed benchmark for krakend: 100000 requests, 100000 successful, 0 failed, 2387.53 RPS
 +---------+----------+---------+--------+----------+----------+-----------+---------+
@@ -9,4 +27,19 @@ Completed benchmark for krakend: 100000 requests, 100000 successful, 0 failed, 2
 | tyk     |   100000 |  100000 |      0 | 38.63 ms | 0.25 ms  | 910.27 ms | 4854.94 |
 | krakend |   100000 |  100000 |      0 | 81.16 ms | 50.50 ms | 450.55 ms | 2387.53 |
 +---------+----------+---------+--------+----------+----------+-----------+---------+
-Results saved to results/benchmark_results.txt
+
+
+** COMMAND: docker compose run benchmark --concurrency=100 --requests=1000 > benchmark_results.txt
+** Rate limiting 100 RPS
+
+Completed benchmark for tyk: 1000 requests, 100 successful, 900 failed, 581.29 RPS
+Completed benchmark for krakend: 1000 requests, 211 successful, 789 failed, 389.68 RPS
++---------+----------+---------+--------+----------+----------+----------+--------+
+| GATEWAY | REQUESTS | SUCCESS | FAILED | AVG TIME | MIN TIME | MAX TIME |  RPS   |
++---------+----------+---------+--------+----------+----------+----------+--------+
+| tyk     |     1000 |     100 |    900 | 81.44 ms | 65.46 ms | 98.55 ms | 581.29 |
+| krakend |     1000 |     211 |    789 | 62.85 ms | 50.81 ms | 74.94 ms | 389.68 |
++---------+----------+---------+--------+----------+----------+----------+--------+
+
+
+```

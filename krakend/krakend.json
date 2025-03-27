@@ -33,14 +33,7 @@
           "encoding": "json",
           "method": "GET",
           "host": ["http://http-service:8000"],
-          "disable_host_sanitize": false,
-          "cache_ttl": "60s",
-          "extra_config": {
-            "qos/ratelimit/proxy": {
-              "max_rate": 10000,
-              "capacity": 10000
-            }
-          }
+          "disable_host_sanitize": false
         }
       ],
       "extra_config": {
@@ -48,8 +41,8 @@
           "sequential": true
         },
         "qos/ratelimit/router": {
-          "max_rate": 10000,
-          "client_max_rate": 10000,
+          "max_rate": 100,
+          "client_max_rate": 100,
           "strategy": "ip"
         }
       }
@@ -66,7 +59,15 @@
           "host": ["http://http-service:8000"],
           "disable_host_sanitize": false
         }
-      ]
+      ],
+      "extra_config": {
+        "qos/ratelimit/router": {
+          "max_rate": 20,
+          "client_max_rate": 20,
+          "strategy": "ip",
+          "capacity": 50
+        }
+      }
     }
   ]
 }
