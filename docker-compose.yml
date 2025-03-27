@@ -1,6 +1,13 @@
 version: '3'
 
 services:
+  # Redis
+  redis:
+    container_name: relaxed_ellis
+    image: redis:alpine
+    networks:
+      - api-network
+
   # Backend Services
   http-service:
     build:

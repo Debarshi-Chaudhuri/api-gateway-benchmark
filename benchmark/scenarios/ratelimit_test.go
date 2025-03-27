@@ -18,8 +18,8 @@ import (
 
 func TestHTTPRateLimit(t *testing.T) {
 	config := BaseConfig{
-		TykBaseURL:     "http://tyk-gateway:8080",
-		KrakendBaseURL: "http://krakend:8081",
+		TykBaseURL:     "http://localhost:8080",
+		KrakendBaseURL: "http://localhost:8081",
 		Concurrency:    5,
 		RequestCount:   100,
 		Timeout:        1 * time.Second, // Short timeout to detect rate limiting faster
