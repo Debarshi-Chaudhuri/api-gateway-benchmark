@@ -30,8 +30,8 @@
     "cache_response_codes": [200]
   },
   "global_rate_limit": {
-    "rate": 100,
-    "per": 60
+    "rate": 10000,
+    "per": 1
   },
   "uptime_tests": {
     "check_list": [
