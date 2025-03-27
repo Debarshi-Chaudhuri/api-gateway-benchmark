@@ -1,18 +1,17 @@
 version: '3'
 
 services:
-  # Redis
+  # Redis for Tyk
   redis:
-    container_name: relaxed_ellis
     image: redis:alpine
     networks:
       - api-network
 
-  # Backend Services
+  # Backend Service
   http-service:
     build:
       context: .
-      dockerfile: backend-services/http-service/Dockerfile
+      dockerfile: http-service/Dockerfile
     environment:
       - PORT=8000
     networks:
@@ -24,59 +23,29 @@ services:
       retries: 3
     restart: unless-stopped
 
-  grpc-service:
-    build:
-      context: .
-      dockerfile: backend-services/grpc-service/Dockerfile
-    environment:
-      - PORT=9000
-    networks:
-      - api-network
-    restart: unless-stopped
-
+  # Tyk Gateway
   tyk-gateway:
     build:
       context: ./tyk
-      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     networks:
       - api-network
     depends_on:
       - http-service
-      - grpc-service
+      - redis
     restart: unless-stopped
-    volumes:
-      - tyk-data:/opt/tyk-gateway/data
 
   # KrakenD Gateway
   krakend:
     build:
       context: ./krakend
-      dockerfile: Dockerfile
     ports:
       - "8081:8081"
-      - "8090:8090"  # Metrics endpoint
     networks:
       - api-network
     depends_on:
       - http-service
-      - grpc-service
-      - krakend-grpc-gateway
-    restart: unless-stopped
-
-  # KrakenD gRPC Gateway (needed for KrakenD to proxy gRPC)
-  krakend-grpc-gateway:
-    build:
-      context: .
-      dockerfile: custom-grpc-gateway/Dockerfile
-    networks:
-      - api-network
-    environment:
-      - PORT=8090
-      - GRPC_SERVER=grpc-service:9000
-    depends_on:
-      - grpc-service
     restart: unless-stopped
 
   # Benchmark service
@@ -90,11 +59,11 @@ services:
       - tyk-gateway
       - krakend
     volumes:
-      - ./benchmark/results:/results
+      - ./results:/results
 
 networks:
   api-network:
     driver: bridge
 
 volumes:
-  tyk-data:
+  results:

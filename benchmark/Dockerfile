@@ -2,15 +2,17 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Copy the root go.mod and go.sum
-COPY go.mod go.sum ./
+# Copy go.mod from root
+COPY go.mod ./
+# Run go mod tidy to ensure go.sum is up to date
+RUN go mod tidy
 RUN go mod download
 
-# Copy the entire project
-COPY . .
+# Copy benchmark code
+COPY benchmark/main.go ./
 
 # Build the application
-RUN go build -o benchmark ./benchmark
+RUN go build -o benchmark main.go
 
 FROM alpine:latest
 

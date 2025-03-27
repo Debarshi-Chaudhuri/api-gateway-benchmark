@@ -3,10 +3,7 @@
   "slug": "http-api",
   "api_id": "http-api-1",
   "org_id": "default",
-  "use_keyless": false,
-  "auth": {
-    "auth_header_name": "Authorization"
-  },
+  "use_keyless": true,
   "definition": {
     "location": "header",
     "key": "version"
@@ -26,16 +23,12 @@
     "strip_listen_path": true
   },
   "active": true,
-  "enable_batch_request_support": false,
   "cache_options": {
     "cache_timeout": 60,
     "enable_cache": true,
     "cache_all_safe_requests": false,
     "cache_response_codes": [200]
   },
-  "session_lifetime": 3600,
-  "domain": "",
-  "do_not_track": false,
   "global_rate_limit": {
     "rate": 100,
     "per": 60
@@ -84,20 +77,9 @@
                 }
               }
             }
-          ],
-          "rate_limit": [
-            {
-              "path": "/api/data",
-              "method": "GET",
-              "rate": 50,
-              "per": 60
-            }
-          ],
-          "transform": [],
-          "transform_response": []
+          ]
         }
       }
     }
-  },
-  "jwt_signing_method": ""
+  }
 }
