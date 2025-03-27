@@ -1,5 +1,8 @@
 FROM tykio/tyk-gateway:v5.0.3
 
+# Create data directory for file-based storage
+RUN mkdir -p /opt/tyk-gateway/data
+
 # Copy Tyk configuration
 COPY tyk.conf /opt/tyk-gateway/tyk.conf
 

@@ -27,15 +27,6 @@ services:
       - api-network
     restart: unless-stopped
 
-  # Tyk Gateway
-  redis:
-    image: redis:alpine
-    networks:
-      - api-network
-    volumes:
-      - redis-data:/data
-    restart: unless-stopped
-
   tyk-gateway:
     build:
       context: ./tyk
@@ -44,13 +35,12 @@ services:
       - "8080:8080"
     networks:
       - api-network
-    environment:
-      - TYK_GW_STORAGE_HOST=redis
     depends_on:
-      - redis
       - http-service
       - grpc-service
     restart: unless-stopped
+    volumes:
+      - tyk-data:/opt/tyk-gateway/data
 
   # KrakenD Gateway
   krakend:
@@ -100,4 +90,4 @@ networks:
     driver: bridge
 
 volumes:
-  redis-data:
+  tyk-data:

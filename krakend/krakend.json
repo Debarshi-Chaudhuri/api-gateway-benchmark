@@ -3,13 +3,12 @@
   "version": 3,
   "name": "KrakenD API Gateway",
   "port": 8081,
-  "timeout": "3000ms",
+  "timeout": "3s",
   "cache_ttl": "300s",
   "output_encoding": "json",
-  "debug_endpoint": true,
   "extra_config": {
     "telemetry/logging": {
-      "level": "DEBUG",
+      "level": "INFO",
       "prefix": "[KRAKEND]",
       "stdout": true
     },
@@ -20,6 +19,13 @@
       "backend_disabled": false,
       "endpoint_disabled": false,
       "listen_address": ":8090"
+    },
+    "router": {
+      "return_error_msg": true,
+      "logger_skip_paths": [
+        "/health",
+        "/metrics"
+      ]
     },
     "security/cors": {
       "allow_origins": ["*"],
@@ -32,21 +38,6 @@
       "max_rate": 100,
       "client_max_rate": 10,
       "strategy": "ip"
-    },
-    "auth/validator": {
-      "alg": "HS256",
-      "jwk_url": "",
-      "keys_to_sign": ["access_token", "refresh_token"],
-      "disable_jwk_security": true,
-      "operation_debug": true,
-      "cache": true,
-      "cache_duration": 3600,
-      "kidSelector": "kid",
-      "jwk_fingerprints": [],
-      "secret": "test-secret-key-for-benchmark",
-      "roles_key": "roles",
-      "roles": [],
-      "roles_key_is_nested": false
     }
   },
   "endpoints": [
@@ -83,7 +74,7 @@
           "strategy": "ip"
         }
       }
-    },  
+    },
     {
       "endpoint": "/http/protected",
       "method": "GET",
@@ -94,27 +85,10 @@
           "encoding": "json",
           "method": "GET",
           "host": ["http://http-service:8000"],
-          "disable_host_sanitize": false,
-          "extra_config": {
-            "modifier/martian": {
-              "header.Modifier": {
-                "scope": ["request"],
-                "name": "Authorization",
-                "value": "Bearer {{ .JWT.raw }}"
-              }
-            }
-          }
+          "disable_host_sanitize": false
         }
       ],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "HS256",
-          "jwk_url": "",
-          "disable_jwk_security": true,
-          "operation_debug": true,
-          "propagation_mode": "header"
-        }
-      }
+      "extra_config": {}
     },
     {
       "endpoint": "/health",
@@ -167,28 +141,11 @@
           "encoding": "json",
           "method": "POST",
           "host": ["http://krakend-grpc-gateway:8090"],
-          "disable_host_sanitize": false,
-          "extra_config": {
-            "modifier/martian": {
-              "header.Modifier": {
-                "scope": ["request"],
-                "name": "Authorization",
-                "value": "Bearer {{ .JWT.raw }}"
-              }
-            }
-          }
+          "disable_host_sanitize": false
         }
       ],
       "input_headers": ["Content-Type"],
-      "extra_config": {
-        "auth/validator": {
-          "alg": "HS256",
-          "jwk_url": "",
-          "disable_jwk_security": true,
-          "operation_debug": true,
-          "propagation_mode": "header"
-        }
-      }
+      "extra_config": {}
     }
   ]
 }

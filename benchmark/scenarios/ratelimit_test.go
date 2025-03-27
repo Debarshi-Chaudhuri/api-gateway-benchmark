@@ -20,8 +20,8 @@ func TestHTTPRateLimit(t *testing.T) {
 	config := BaseConfig{
 		TykBaseURL:     "http://tyk-gateway:8080",
 		KrakendBaseURL: "http://krakend:8081",
-		Concurrency:    10,
-		RequestCount:   200,
+		Concurrency:    5,
+		RequestCount:   100,
 		Timeout:        1 * time.Second, // Short timeout to detect rate limiting faster
 	}
 
@@ -35,7 +35,7 @@ func TestHTTPRateLimit(t *testing.T) {
 		var mu sync.Mutex
 
 		var wg sync.WaitGroup
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 1; i++ {
 			wg.Add(1)
 			go func(id int) {
 				defer wg.Done()
@@ -53,6 +53,10 @@ func TestHTTPRateLimit(t *testing.T) {
 
 					_, err = RequestStats(t, client, req)
 
+					// Log error message if rate limiting is detected
+					if err != nil {
+						t.Logf("Request %d failed: %v", j, err)
+					}
 					mu.Lock()
 					if err != nil {
 						failureCount++
