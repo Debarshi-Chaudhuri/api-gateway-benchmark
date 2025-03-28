@@ -91,3 +91,49 @@ Completed benchmark for krakend: 1000 requests, 211 successful, 789 failed, 389.
 
 
 ```
+
+Writing Custom Go Plugins in Tyk[0]
+––––––––––––––––––––––––––––––––
+Plugins are added as a middleware layer. Can be added in request and response both to transform.
+Plugins need to be compiled using PluginCompiler[1]
+Different hook types to add plugin at different layers. Pre auth, post auth, response. [2]
+Different hook capabilities based on where the plugin is header manipulation, body manipulation, etc [3]
+
+
+Rate limiting [4]
+––––––––––––––––––––––––––––––––
+`rate` which is the maximum number of requests that will be permitted during the interval (window). `per` which is the length of the interval (window) in seconds
+Multi scopes for rate limiting API Level and Key level(User specific)
+Tyk offers the following rate limiting algorithms:
+ - Distributed Rate Limiter: recommended for most use cases, implements the token bucket algorithm
+ - Redis Rate Limiter: implements the sliding window log algorithm
+ - Fixed Window Rate Limiter: implements the fixed window algorithm
+Offers throttling [5]
+Circuit Breakers [6]
+
+
+gRPC Support [7]
+–––––––––––––––––––––––––––––––––
+
+Can be used as a grpc proxy setup
+
+
+Authentication [8]
+–––––––––––––––––––––––––––––––––
+OAuth2, JWT, Basic Auth, Auth Tokens, mTLS, hmac, etc
+
+
+[0] https://tyk.io/docs/5.7/api-management/plugins/golang/
+[1] https://tyk.io/docs/5.7/api-management/plugins/golang/#plugin-compiler
+[2] https://tyk.io/docs/5.7/api-management/plugins/plugin-types/
+[3] https://tyk.io/docs/5.7/api-management/plugins/plugin-types/#hook-capabilities
+[4] https://tyk.io/docs/5.7/api-management/rate-limit/
+[5] https://tyk.io/docs/api-management/rate-limit/#controlling-and-limiting-traffic
+[6] https://tyk.io/docs/api-management/gateway-config-tyk-oas/#circuitbreaker
+[7] https://tyk.io/docs/api-management/non-http-protocols/#grpc-proxy
+[8] https://tyk.io/docs/api-management/client-authentication/#use-tyk-as-an-oauth-20-authorization-server
+
+
+
+Writing Custom Go Plugins in KrakenD
+https://github.com/krakend/examples/tree/main/plugins
