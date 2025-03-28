@@ -50,7 +50,7 @@ These assessments of Tyk and KrakenD are generally accurate, but I can offer som
 
 
 ## Benchmark Tests
-
+```
 ** COMMAND: docker compose run benchmark --concurrency=200 --requests=100000 > benchmark_results.txt
 ** No rate limiting no caching
 
