@@ -1,6 +1,6 @@
 module api-gateway-benchmark
 
-go 1.21
+go 1.23.7
 
 require github.com/olekukonko/tablewriter v0.0.5
 

@@ -1,39 +1,41 @@
 #!/bin/bash
-# build_plugin.sh - Build Tyk plugin with specific Go version and GCC support
-
-# Define Go version - CHANGE THIS to match Tyk's Go version
-GO_VERSION="1.20.5"  # Tyk 5.0.3 uses Go 1.20.5
+# build_plugin.sh - Build Tyk plugin using official Tyk plugin compiler
 
 # Echo with timestamp and color
 info() {
   echo -e "\033[0;34m[$(date '+%Y-%m-%d %H:%M:%S')]\033[0m $1"
 }
 
+# Define paths - adjust these for your environment
+PROJECT_ROOT="/Users/debarshi/go/src/api-gateway-benchmark"
+PLUGIN_DIR="tyk/plugins"
+OUTPUT_DIR="tyk/middleware"
+PLUGIN_NAME="logger"
+
 # Create middleware directory if it doesn't exist
-mkdir -p tyk/middleware
+mkdir -p "$PROJECT_ROOT/$OUTPUT_DIR"
 
-info "Building Tyk plugin with Go $GO_VERSION..."
+# Change to the plugin directory
+cd "$PROJECT_ROOT/$PLUGIN_DIR"
 
-# Use Docker to ensure we have the exact Go version and GCC
-docker run --rm \
-  -v "$(pwd):/app" \
-  -w /app \
-  golang:$GO_VERSION \
-  bash -c "
-    # Install GCC and build tools
-    apt-get update && apt-get install -y gcc libc6-dev
-    
-    info() { echo -e '\033[0;34m[INFO]\033[0m \$1'; }
-    info 'Go version:' && go version && 
-    info 'Building plugin...' &&
-    cd tyk/plugins && 
-    CGO_ENABLED=1 go build -buildmode=plugin -o ../middleware/logger.so logger.go
-  "
+info "Initializing Go module for Tyk plugin..."
+# Step 1: Initialize Go module with an appropriate name
+docker run -v "$(pwd):/plugin-source" -t --workdir /plugin-source \
+  --platform=linux/amd64 --entrypoint go --rm tykio/tyk-plugin-compiler:v5.8.0 \
+  tyk-plugin
 
-# Check if build succeeded
-if [ -f "tyk/middleware/logger.so" ]; then
-  info "✅ Plugin built successfully at tyk/middleware/logger.so"
-else
-  info "❌ Plugin build failed"
-  exit 1
-fi
+info "Building Tyk plugin using official Tyk plugin compiler..."
+
+echo "$PLUGIN_NAME.so"
+# Step 2: Compile the plugin
+docker run --rm -v "$(pwd):/plugin-source" --platform=linux/amd64 \
+  tykio/tyk-plugin-compiler:v5.8.0 \
+  "$PLUGIN_NAME.so" "$(date +%s%N)"
+
+# Move the compiled plugin to the middleware directory
+# if [ -f "$PROJECT_ROOT/$PLUGIN_DIR/$PLUGIN_NAME.so" ]; then
+#   mv "$PROJECT_ROOT/$PLUGIN_DIR/$PLUGIN_NAME.so" "$PROJECT_ROOT/$OUTPUT_DIR/"
+#   info "✅ Plugin built successfully and moved to $OUTPUT_DIR/$PLUGIN_NAME.so"
+# else
+#   info "❌ Plugin build failed"
+# fi

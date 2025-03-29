@@ -48,29 +48,18 @@
     "pre": [],
     "post": [],
     "post_key_auth": [],
-    "auth_check": {
-      "name": "",
-      "path": "",
-      "require_session": false,
-      "raw_body_only": false
-    },
-    "response": [
-      {
-        "name": "ResponseLogger",
-        "path": "logger.so"
-      }
-    ],
-    "driver": "goplugin",
-    "id_extractor": {
-      "extract_from": "",
-      "extract_with": "",
-      "extractor_config": {}
-    },
     "request": [
       {
         "name": "RequestLogger",
-        "path": "logger.so"
+        "path": "/opt/tyk-gateway/middleware/logger.so"
       }
-    ]
+    ],
+    "response": [
+      {
+        "name": "ResponseLogger",
+        "path": "/opt/tyk-gateway/middleware/logger.so"
+      }
+    ],
+    "driver": "goplugin"
   }
 }

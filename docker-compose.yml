@@ -47,6 +47,7 @@ services:
     build:
       context: .
       dockerfile: tyk/Dockerfile
+    platform: linux/amd64
     ports:
       - "8080:8080"
     networks:
@@ -81,19 +82,19 @@ services:
         max-file: "3"
 
   # Benchmark service
-  benchmark:
-    build:
-      context: .
-      dockerfile: benchmark/Dockerfile
-    networks:
-      - api-network
-    depends_on:
-      tyk-gateway:
-        condition: service_started
-      krakend:
-        condition: service_started
-    volumes:
-      - ./results:/results
+  # benchmark:
+  #   build:
+  #     context: .
+  #     dockerfile: benchmark/Dockerfile
+  #   networks:
+  #     - api-network
+  #   depends_on:
+  #     tyk-gateway:
+  #       condition: service_started
+  #     krakend:
+  #       condition: service_started
+  #   volumes:
+  #     - ./results:/results
 
 networks:
   api-network:
