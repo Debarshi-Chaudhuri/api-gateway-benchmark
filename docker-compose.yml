@@ -40,7 +40,8 @@ services:
   # Tyk Gateway
   tyk-gateway:
     build:
-      context: ./tyk
+      context: .
+      dockerfile: tyk/Dockerfile
     ports:
       - "8080:8080"
     networks:

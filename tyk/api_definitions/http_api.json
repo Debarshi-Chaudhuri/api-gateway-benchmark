@@ -12,13 +12,34 @@
   "active": true,
   "disable_rate_limit": false,
   
-
   "global_rate_limit": {
     "rate": 20,
     "per": 1
   },
   
-
+  "custom_middleware": {
+    "pre": [
+      {
+        "name": "RequestLogger",
+        "path": "logger.so"
+      }
+    ],
+    "post": [],
+    "post_key_auth": [],
+    "auth_check": {
+      "name": "",
+      "path": "",
+      "require_session": false
+    },
+    "response": [
+      {
+        "name": "ResponseLogger",
+        "path": "logger.so"
+      }
+    ],
+    "driver": "goplugin"
+  },
+  
   "extended_paths": {
     "ignored": [],
     "white_list": [],
