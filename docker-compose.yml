@@ -6,11 +6,16 @@ services:
     image: redis:alpine
     networks:
       - api-network
+    volumes:
+      - redis_data:/data
+    restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
-      retries: 3
+      retries: 5
+      start_period: 10s
+    command: ["redis-server", "--appendonly", "yes"]
 
   # Backend Service
   http-service:
@@ -47,17 +52,16 @@ services:
     networks:
       - api-network
     depends_on:
-      http-service:
-        condition: service_healthy
       redis:
         condition: service_healthy
+      http-service:
+        condition: service_healthy
     restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    
   # KrakenD Gateway
   krakend:
     build:
@@ -94,3 +98,6 @@ services:
 networks:
   api-network:
     driver: bridge
+
+volumes:
+  redis_data:

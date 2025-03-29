@@ -21,6 +21,9 @@ FROM tykio/tyk-gateway:v5.0.3
 
 # Copy configuration and API definitions
 COPY tyk/tyk.conf /opt/tyk-gateway/tyk.conf
+
 RUN mkdir -p /opt/tyk-gateway/apps /opt/tyk-gateway/middleware
+
 COPY tyk/api_definitions/ /opt/tyk-gateway/apps/
+
 COPY --from=builder /go/src/api-gateway-benchmark/tyk/middleware/ /opt/tyk-gateway/middleware/
