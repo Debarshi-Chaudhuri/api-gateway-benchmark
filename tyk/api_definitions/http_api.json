@@ -45,15 +45,14 @@
     ]
   },
   "custom_middleware": {
-    "pre": [],
-    "post": [],
-    "post_key_auth": [],
-    "request": [
+    "pre": [
       {
         "name": "RequestLogger",
         "path": "/opt/tyk-gateway/middleware/logger.so"
       }
     ],
+    "post": [],
+    "post_key_auth": [],
     "response": [
       {
         "name": "ResponseLogger",
