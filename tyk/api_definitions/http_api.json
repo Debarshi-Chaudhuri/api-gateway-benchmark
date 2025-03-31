@@ -19,46 +19,22 @@
     "strip_listen_path": true
   },
   "active": true,
-  "disable_rate_limit": false,
+  "disable_rate_limit": true,
+  "cache_options": {
+    "enable_cache": false,
+    "cache_all_safe_requests": false,
+    "cache_response_codes": []
+  },
   "global_rate_limit": {
-    "rate": 20,
-    "per": 1
+    "rate": 0,
+    "per": 0
   },
   "extended_paths": {
     "ignored": [],
     "white_list": [],
     "black_list": [],
-    "rate_limit": [
-      {
-        "path": "/api/data",
-        "method": "GET",
-        "rate": 20,
-        "per": 1,
-        "throttle_interval": 0,
-        "throttle_retry_limit": 0,
-        "max_query_depth": 0,
-        "throttle_policy": "",
-        "throttle_data": {},
-        "enable_max_burst": true,
-        "max_burst_multiplier": 2.5
-      }
-    ]
-  },
-  "custom_middleware": {
-    "pre": [
-      {
-        "name": "RequestLogger",
-        "path": "/opt/tyk-gateway/middleware/logger.so"
-      }
-    ],
-    "post": [],
-    "post_key_auth": [],
-    "response": [
-      {
-        "name": "ResponseLogger",
-        "path": "/opt/tyk-gateway/middleware/logger.so"
-      }
-    ],
-    "driver": "goplugin"
+    "cache": [],
+    "transform": [],
+    "transform_response": []
   }
 }

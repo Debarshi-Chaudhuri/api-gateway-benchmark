@@ -68,20 +68,17 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 func handleData(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received data request: %s %s", r.Method, r.URL.Path)
 
-	// Get delay parameter for testing
-	delay := 50 // default delay in milliseconds
 	delayParam := r.URL.Query().Get("delay")
 	if delayParam != "" {
 		if parsedDelay, err := strconv.Atoi(delayParam); err == nil && parsedDelay > 0 {
-			delay = parsedDelay
+			delay := parsedDelay
+			// Log the delay we're using
+			log.Printf("Using delay of %d ms", delay)
+
+			// Simulate processing delay
+			time.Sleep(time.Duration(delay) * time.Millisecond)
 		}
 	}
-
-	// Log the delay we're using
-	log.Printf("Using delay of %d ms", delay)
-
-	// Simulate processing delay
-	time.Sleep(time.Duration(delay) * time.Millisecond)
 
 	data := map[string]interface{}{
 		"items": []string{"item1", "item2", "item3"},

@@ -16,6 +16,19 @@ Completed benchmark for krakend: 100000 requests, 87947 successful, 12053 failed
 +---------+----------+---------+--------+-----------+----------+------------+---------+
 
 
+** COMMAND: docker compose run benchmark --concurrency=100 --requests=1000 > benchmark_results.txt
+** Rate limiting 100 RPS
+
+Completed benchmark for tyk: 1000 requests, 100 successful, 900 failed, 581.29 RPS
+Completed benchmark for krakend: 1000 requests, 211 successful, 789 failed, 389.68 RPS
++---------+----------+---------+--------+----------+----------+----------+--------+
+| GATEWAY | REQUESTS | SUCCESS | FAILED | AVG TIME | MIN TIME | MAX TIME |  RPS   |
++---------+----------+---------+--------+----------+----------+----------+--------+
+| tyk     |     1000 |     100 |    900 | 81.44 ms | 65.46 ms | 98.55 ms | 581.29 |
+| krakend |     1000 |     211 |    789 | 62.85 ms | 50.81 ms | 74.94 ms | 389.68 |
++---------+----------+---------+--------+----------+----------+----------+--------+
+
+
 ** COMMAND: docker compose run benchmark --concurrency=200 --requests=100000 > benchmark_results.txt
 ** No rate limiting caching timeout 300s
 
@@ -29,17 +42,14 @@ Completed benchmark for krakend: 100000 requests, 100000 successful, 0 failed, 2
 +---------+----------+---------+--------+----------+----------+-----------+---------+
 
 
-** COMMAND: docker compose run benchmark --concurrency=100 --requests=1000 > benchmark_results.txt
-** Rate limiting 100 RPS
+** COMMAND: docker compose run benchmark --concurrency=200 --requests=100000 > benchmark_results.txt
+** No caching
 
-Completed benchmark for tyk: 1000 requests, 100 successful, 900 failed, 581.29 RPS
-Completed benchmark for krakend: 1000 requests, 211 successful, 789 failed, 389.68 RPS
-+---------+----------+---------+--------+----------+----------+----------+--------+
-| GATEWAY | REQUESTS | SUCCESS | FAILED | AVG TIME | MIN TIME | MAX TIME |  RPS   |
-+---------+----------+---------+--------+----------+----------+----------+--------+
-| tyk     |     1000 |     100 |    900 | 81.44 ms | 65.46 ms | 98.55 ms | 581.29 |
-| krakend |     1000 |     211 |    789 | 62.85 ms | 50.81 ms | 74.94 ms | 389.68 |
-+---------+----------+---------+--------+----------+----------+----------+--------+
-
+Completed benchmark for tyk: 100000 requests, 99950 successful, 50 failed, 537.46 RPS
++---------+----------+---------+--------+------------+----------+-------------+--------+
+| GATEWAY | REQUESTS | SUCCESS | FAILED |  AVG TIME  | MIN TIME |  MAX TIME   |  RPS   |
++---------+----------+---------+--------+------------+----------+-------------+--------+
+| tyk     |   100000 |   99950 |     50 | 345.89 ms  | 0.67 ms  | 11980.26 ms | 537.46 |
++---------+----------+---------+--------+------------+----------+-------------+--------+
 
 ```

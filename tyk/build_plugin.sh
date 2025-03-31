@@ -26,16 +26,22 @@ docker run -v "$(pwd):/plugin-source" -t --workdir /plugin-source \
 
 info "Building Tyk plugin using official Tyk plugin compiler..."
 
-echo "$PLUGIN_NAME.so"
+echo "Building $PLUGIN_NAME.so"
 # Step 2: Compile the plugin
-docker run --rm -v "$(pwd):/plugin-source" --platform=linux/amd64 \
+docker run --rm -v "$(pwd):/plugin-source" -v "$PROJECT_ROOT/$OUTPUT_DIR:/output" --platform=linux/amd64 \
   tykio/tyk-plugin-compiler:v5.8.0 \
   "$PLUGIN_NAME.so" "$(date +%s%N)"
 
-# Move the compiled plugin to the middleware directory
-# if [ -f "$PROJECT_ROOT/$PLUGIN_DIR/$PLUGIN_NAME.so" ]; then
-#   mv "$PROJECT_ROOT/$PLUGIN_DIR/$PLUGIN_NAME.so" "$PROJECT_ROOT/$OUTPUT_DIR/"
-#   info "✅ Plugin built successfully and moved to $OUTPUT_DIR/$PLUGIN_NAME.so"
-# else
-#   info "❌ Plugin build failed"
-# fi
+# Move all compiled .so files to the output directory
+if ls *.so 1> /dev/null 2>&1; then
+  # If .so files were created in the current directory, move them all to the output
+  mv *.so "$PROJECT_ROOT/$OUTPUT_DIR/"
+  info "✅ Plugin(s) built successfully and moved to $OUTPUT_DIR/"
+elif [ -f "$PROJECT_ROOT/$OUTPUT_DIR/$PLUGIN_NAME.so" ]; then
+  # If the file was already created in the output directory
+  info "✅ Plugin built successfully in $OUTPUT_DIR/$PLUGIN_NAME.so"
+else
+  info "❌ Plugin build failed"
+fi
+
+cd "$PROJECT_ROOT"
