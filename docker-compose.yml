@@ -17,6 +17,24 @@ services:
       start_period: 10s
     command: ["redis-server", "--appendonly", "yes"]
 
+  # MongoDB for Tyk Pump analytics
+  mongodb:
+    image: mongo:6.0
+    networks:
+      - api-network
+    volumes:
+      - mongo_data:/data/db
+    restart: always
+    ports:
+      - "27017:27017"
+    command: --noauth
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   # Backend Service
   http-service:
     build:
@@ -62,6 +80,23 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
+      - TYK_GW_ANALYTICSCONFIG_ENABLEANALYTICS=true
+
+  # Tyk Pump for Analytics
+  tyk-pump:
+    image: tykio/tyk-pump-docker-pub:v1.12.0
+    networks:
+      - api-network
+    volumes:
+      - ./tyk/pump/pump.conf:/opt/tyk-pump/pump.conf
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      tyk-gateway:
+        condition: service_started
+    restart: unless-stopped
     
   # KrakenD Gateway
   # krakend:
@@ -102,3 +137,4 @@ networks:
 
 volumes:
   redis_data:
+  mongo_data:
