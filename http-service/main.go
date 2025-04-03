@@ -85,6 +85,25 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 func handleData(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received data request: %s %s", r.Method, r.URL.Path)
 
+	// Check if the "break" parameter exists in the query
+	if delay := r.URL.Query().Get("delay"); delay != "" {
+		// Log the error
+		log.Printf("Break parameter detected, returning internal server error")
+
+		// Set HTTP status code to 500 Internal Server Error
+		w.WriteHeader(http.StatusInternalServerError)
+
+		// Return error response
+		resp := Response{
+			Status:    "error",
+			Message:   "Internal server error",
+			Timestamp: time.Now(),
+		}
+
+		sendJSON(w, resp)
+		return
+	}
+
 	delayParam := r.URL.Query().Get("delay")
 	if delayParam != "" {
 		if parsedDelay, err := strconv.Atoi(delayParam); err == nil && parsedDelay > 0 {
