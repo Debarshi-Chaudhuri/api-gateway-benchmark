@@ -1,57 +1,39 @@
 version: '3'
 
 services:
-  # Redis for Tyk
+  # Redis with TLS
   redis:
     image: redis:alpine
     networks:
       - api-network
     volumes:
       - redis_data:/data
-    restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 10s
-    command: ["redis-server", "--appendonly", "yes"]
-
-  # MongoDB for Tyk Pump analytics
-  mongodb:
-    image: mongo:6.0
-    networks:
-      - api-network
-    volumes:
-      - mongo_data:/data/db
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - ./tls/redis:/etc/redis/certs
     restart: always
     ports:
-      - "27017:27017"
-    command: --noauth
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      - "6379:6379"
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
 
-  # Backend Service
+  # Backend Service with TLS
   http-service:
     build:
       context: .
       dockerfile: http-service/Dockerfile
     environment:
       - PORT=8000
+      - TLS_CERT=/etc/http-service/certs/http.crt
+      - TLS_KEY=/etc/http-service/certs/http.key
+    volumes:
+      - ./tls/http:/etc/http-service/certs
     networks:
       - api-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "--cacert", "/etc/http-service/certs/ca.crt", "--insecure", "https://localhost:8000/health"]
       interval: 5s
       timeout: 3s
       retries: 5
     restart: unless-stopped
-    # Use host mode for better performance during benchmarks
-    # This exposes the service directly on host port 8000
     ports:
       - "8000:8000"
     logging:
@@ -60,43 +42,29 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Tyk Gateway
-  tyk-gateway:
-    build:
-      context: .
-      dockerfile: tyk/Dockerfile
-    platform: linux/amd64
-    ports:
-      - "8080:8080"
-    networks:
-      - api-network
-    depends_on:
-      redis:
-        condition: service_healthy
-      http-service:
-        condition: service_healthy
-    restart: unless-stopped
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
-      - TYK_GW_ANALYTICSCONFIG_ENABLEANALYTICS=true
-
-  # Tyk Pump for Analytics
-  tyk-pump:
-    image: tykio/tyk-pump-docker-pub:v1.12.0
-    networks:
-      - api-network
-    volumes:
-      - ./tyk/pump/pump.conf:/opt/tyk-pump/pump.conf
-    depends_on:
-      redis:
-        condition: service_healthy
-      mongodb:
-        condition: service_healthy
-      tyk-gateway:
-        condition: service_started
-    restart: unless-stopped
+  # Tyk Gateway with TLS
+  # tyk-gateway:
+  #   build:
+  #     context: .
+  #     dockerfile: tyk/Dockerfile
+  #   platform: linux/amd64
+  #   ports:
+  #     - "8080:8080"
+  #   networks:
+  #     - api-network
+  #   volumes:
+  #     - ./tyk.conf:/opt/tyk-gateway/tyk.conf
+  #     - ./tls/tyk:/etc/tyk-gateway/certs
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+  #     http-service:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - REDIS_PASSWORD=REDIS_PASSWORD
     
   # KrakenD Gateway
   # krakend:
@@ -137,4 +105,3 @@ networks:
 
 volumes:
   redis_data:
-  mongo_data:

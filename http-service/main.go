@@ -23,6 +23,11 @@ func main() {
 		port = "8000"
 	}
 
+	// Set up routes
+	http.HandleFunc("/", handleRoot)
+	http.HandleFunc("/api/data", handleData)
+	http.HandleFunc("/health", handleHealth)
+
 	// Create a more robust HTTP server with timeouts
 	server := &http.Server{
 		Addr:         ":" + port,
@@ -31,25 +36,32 @@ func main() {
 		IdleTimeout:  120 * time.Second,
 	}
 
-	// Set up routes
-	http.HandleFunc("/", handleRoot)
-	http.HandleFunc("/api/data", handleData)
-	http.HandleFunc("/health", handleHealth)
-
 	// Log startup
-	log.Printf("HTTP service starting on port %s", port)
+	log.Printf("HTTP service starting on TLS port %s", port)
 
 	// Print a message every 5 seconds to show the service is alive
 	go func() {
 		for {
-			log.Printf("HTTP service is running...")
+			log.Printf("HTTP service is running with TLS...")
 			time.Sleep(5 * time.Second)
 		}
 	}()
 
-	// Start server
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	// Check if TLS is enabled
+	certFile := os.Getenv("TLS_CERT")
+	keyFile := os.Getenv("TLS_KEY")
+
+	// Start the server with TLS if certificates are provided
+	if certFile != "" && keyFile != "" {
+		log.Printf("Starting with TLS using cert: %s and key: %s", certFile, keyFile)
+		if err := server.ListenAndServeTLS(certFile, keyFile); err != nil {
+			log.Fatalf("Failed to start TLS server: %v", err)
+		}
+	} else {
+		log.Printf("TLS certificates not provided, starting without TLS")
+		if err := server.ListenAndServe(); err != nil {
+			log.Fatalf("Failed to start server: %v", err)
+		}
 	}
 }
 
@@ -58,7 +70,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 
 	resp := Response{
 		Status:    "success",
-		Message:   "Welcome to the API",
+		Message:   "Welcome to the API (TLS Enabled)",
 		Timestamp: time.Now(),
 	}
 
@@ -100,7 +112,7 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	resp := Response{
 		Status:    "success",
-		Message:   "Service is healthy",
+		Message:   "Service is healthy (TLS Enabled)",
 		Timestamp: time.Now(),
 	}
 

@@ -16,12 +16,21 @@ RUN go build -o http-service main.go
 
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates curl
+RUN apk --no-cache add ca-certificates curl openssl
 
 WORKDIR /app/
 
 COPY --from=builder /app/http-service .
 
+# Create directory for TLS certificates
+RUN mkdir -p /etc/http-service/certs
+
+# Copy TLS certificates
+COPY tls/http/ /etc/http-service/certs/
+
 EXPOSE 8000
 
 CMD ["./http-service"]
+
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 \
+  CMD curl -f --cacert /etc/http-service/certs/ca.crt https://localhost:8000/health || exit 1
