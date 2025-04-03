@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -34,6 +35,10 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
+		TLSConfig: &tls.Config{
+			// No client certificate validation settings
+			MinVersion: tls.VersionTLS12,
+		},
 	}
 
 	// Log startup

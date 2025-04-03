@@ -26,7 +26,7 @@ COPY --from=builder /app/http-service .
 RUN mkdir -p /etc/http-service/certs
 
 # Copy TLS certificates
-COPY tls/http/ /etc/http-service/certs/
+COPY tls/http-service/ /etc/http-service/certs/
 
 EXPOSE 8000
 

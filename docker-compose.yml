@@ -9,7 +9,9 @@ services:
     volumes:
       - redis_data:/data
       - ./redis.conf:/usr/local/etc/redis/redis.conf
-      - ./tls/redis:/etc/redis/certs
+      - ./tls/redis/redis.crt:/etc/redis/certs/redis.crt
+      - ./tls/redis/redis.key:/etc/redis/certs/redis.key
+      - ./tls/redis/ca.crt:/etc/redis/certs/ca.crt
     restart: always
     ports:
       - "6379:6379"
@@ -25,11 +27,13 @@ services:
       - TLS_CERT=/etc/http-service/certs/http.crt
       - TLS_KEY=/etc/http-service/certs/http.key
     volumes:
-      - ./tls/http:/etc/http-service/certs
+      - ./tls/http-service/http.crt:/etc/http-service/certs/http.crt
+      - ./tls/http-service/http.key:/etc/http-service/certs/http.key
+      - ./tls/http-service/ca.crt:/etc/http-service/certs/ca.crt
     networks:
       - api-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "--cacert", "/etc/http-service/certs/ca.crt", "--insecure", "https://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "--cacert", "/etc/http-service/certs/ca.crt", "https://localhost:8000/health"]
       interval: 5s
       timeout: 3s
       retries: 5
