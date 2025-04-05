@@ -86,7 +86,7 @@ func handleData(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received data request: %s %s", r.Method, r.URL.Path)
 
 	// Check if the "break" parameter exists in the query
-	if delay := r.URL.Query().Get("delay"); delay != "" {
+	if breakParam := r.URL.Query().Get("break"); breakParam != "" {
 		// Log the error
 		log.Printf("Break parameter detected, returning internal server error")
 

@@ -16,5 +16,3 @@ func ResponseLogger(w http.ResponseWriter, res *http.Response, r *http.Request) 
 	fmt.Println("ResponseLogger")
 
 }
-
-func main() {}
