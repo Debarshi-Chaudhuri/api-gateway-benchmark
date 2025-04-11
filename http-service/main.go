@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -35,38 +34,42 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  120 * time.Second,
-		TLSConfig: &tls.Config{
-			// No client certificate validation settings
-			MinVersion: tls.VersionTLS12,
-		},
+		// TLSConfig: &tls.Config{
+		// 	// No client certificate validation settings
+		// 	MinVersion: tls.VersionTLS12,
+		// },
 	}
 
 	// Log startup
-	log.Printf("HTTP service starting on TLS port %s", port)
+	// log.Printf("HTTP service starting on TLS port %s", port)
 
-	// Print a message every 5 seconds to show the service is alive
-	go func() {
-		for {
-			log.Printf("HTTP service is running with TLS...")
-			time.Sleep(5 * time.Second)
-		}
-	}()
+	// // Print a message every 5 seconds to show the service is alive
+	// go func() {
+	// 	for {
+	// 		log.Printf("HTTP service is running with TLS...")
+	// 		time.Sleep(5 * time.Second)
+	// 	}
+	// }()
 
 	// Check if TLS is enabled
-	certFile := os.Getenv("TLS_CERT")
-	keyFile := os.Getenv("TLS_KEY")
+	// certFile := os.Getenv("TLS_CERT")
+	// keyFile := os.Getenv("TLS_KEY")
 
 	// Start the server with TLS if certificates are provided
-	if certFile != "" && keyFile != "" {
-		log.Printf("Starting with TLS using cert: %s and key: %s", certFile, keyFile)
-		if err := server.ListenAndServeTLS(certFile, keyFile); err != nil {
-			log.Fatalf("Failed to start TLS server: %v", err)
-		}
-	} else {
-		log.Printf("TLS certificates not provided, starting without TLS")
-		if err := server.ListenAndServe(); err != nil {
-			log.Fatalf("Failed to start server: %v", err)
-		}
+	// if certFile != "" && keyFile != "" {
+	// 	log.Printf("Starting with TLS using cert: %s and key: %s", certFile, keyFile)
+	// 	if err := server.ListenAndServeTLS(certFile, keyFile); err != nil {
+	// 		log.Fatalf("Failed to start TLS server: %v", err)
+	// 	}
+	// } else {
+	// 	log.Printf("TLS certificates not provided, starting without TLS")
+	// 	if err := server.ListenAndServe(); err != nil {
+	// 		log.Fatalf("Failed to start server: %v", err)
+	// 	}
+	// }
+
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }
 
@@ -75,7 +78,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 
 	resp := Response{
 		Status:    "success",
-		Message:   "Welcome to the API (TLS Enabled)",
+		Message:   "Welcome to the API",
 		Timestamp: time.Now(),
 	}
 
@@ -101,6 +104,7 @@ func handleData(w http.ResponseWriter, r *http.Request) {
 		}
 
 		sendJSON(w, resp)
+
 		return
 	}
 
@@ -136,7 +140,7 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	resp := Response{
 		Status:    "success",
-		Message:   "Service is healthy (TLS Enabled)",
+		Message:   "Service is healthy",
 		Timestamp: time.Now(),
 	}
 

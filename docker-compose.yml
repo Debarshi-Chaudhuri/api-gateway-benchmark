@@ -22,24 +22,11 @@ services:
     build:
       context: .
       dockerfile: http-service/Dockerfile
-    environment:
-      - PORT=8000
-      - TLS_CERT=/etc/http-service/certs/http.crt
-      - TLS_KEY=/etc/http-service/certs/http.key
-    volumes:
-      - ./tls/http-service/http.crt:/etc/http-service/certs/http.crt
-      - ./tls/http-service/http.key:/etc/http-service/certs/http.key
-      - ./tls/http-service/ca.crt:/etc/http-service/certs/ca.crt
-    networks:
-      - api-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "--cacert", "/etc/http-service/certs/ca.crt", "https://localhost:8000/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-    restart: unless-stopped
     ports:
       - "8000:8000"
+    networks:
+      - api-network
+    restart: unless-stopped
     logging:
       driver: "json-file"
       options:

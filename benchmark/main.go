@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -41,6 +42,7 @@ func main() {
 
 	// Run benchmark for each gateway
 	fmt.Println("\nRunning HTTP benchmarks...")
+
 	results = append(results, runHTTPBenchmark(config)...)
 
 	// Print results
@@ -76,8 +78,8 @@ func runHTTPBenchmark(config BenchmarkConfig) []BenchmarkResult {
 	var results []BenchmarkResult
 
 	endpoints := map[string]string{
-		"tyk":     fmt.Sprintf("%s/http-api/api/data", config.TykBaseURL),
-		"krakend": fmt.Sprintf("%s/http/data", config.KrakendBaseURL),
+		"tyk":     config.TykBaseURL + "/http-api/api/data",
+		"krakend": config.KrakendBaseURL + "/http/data",
 	}
 
 	for gateway, endpoint := range endpoints {
@@ -88,21 +90,25 @@ func runHTTPBenchmark(config BenchmarkConfig) []BenchmarkResult {
 		}
 
 		start := time.Now()
+
 		var wg sync.WaitGroup
+
 		requestsPerWorker := config.RequestCount / config.Concurrency
 		resultsChan := make(chan time.Duration, config.RequestCount)
 		errorsChan := make(chan error, config.RequestCount)
 
 		for i := 0; i < config.Concurrency; i++ {
 			wg.Add(1)
+
 			go func() {
 				defer wg.Done()
+
 				client := &http.Client{
 					Timeout: config.Timeout,
 				}
 
 				for j := 0; j < requestsPerWorker; j++ {
-					req, err := http.NewRequest("GET", endpoint, nil)
+					req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 					if err != nil {
 						errorsChan <- err
 						continue
@@ -122,6 +128,7 @@ func runHTTPBenchmark(config BenchmarkConfig) []BenchmarkResult {
 					} else {
 						errorsChan <- fmt.Errorf("request failed with status code: %d", resp.StatusCode)
 					}
+
 					resp.Body.Close()
 				}
 			}()
@@ -173,14 +180,25 @@ func runHTTPBenchmark(config BenchmarkConfig) []BenchmarkResult {
 
 func printResults(results []BenchmarkResult) {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Gateway", "Requests", "Success", "Failed", "Avg Time", "Min Time", "Max Time", "RPS"})
+	table.SetHeader(
+		[]string{
+			"Gateway",
+			"Requests",
+			"Success",
+			"Failed",
+			"Avg Time",
+			"Min Time",
+			"Max Time",
+			"RPS",
+		},
+	)
 
 	for _, result := range results {
 		table.Append([]string{
 			result.Gateway,
-			fmt.Sprintf("%d", result.RequestCount),
-			fmt.Sprintf("%d", result.SuccessCount),
-			fmt.Sprintf("%d", result.FailureCount),
+			strconv.Itoa(result.RequestCount),
+			strconv.Itoa(result.SuccessCount),
+			strconv.Itoa(result.FailureCount),
 			fmt.Sprintf("%.2f ms", float64(result.AvgResponseTime.Microseconds())/1000.0),
 			fmt.Sprintf("%.2f ms", float64(result.MinResponseTime.Microseconds())/1000.0),
 			fmt.Sprintf("%.2f ms", float64(result.MaxResponseTime.Microseconds())/1000.0),
@@ -195,7 +213,7 @@ func saveResults(results []BenchmarkResult, filePath string) {
 	// Create directory if it doesn't exist
 	dir := "results"
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		os.Mkdir(dir, 0755)
+		os.Mkdir(dir, 0o755)
 	}
 
 	// Format results as text
@@ -208,15 +226,24 @@ func saveResults(results []BenchmarkResult, filePath string) {
 		content += fmt.Sprintf("Requests: %d\n", result.RequestCount)
 		content += fmt.Sprintf("Success: %d\n", result.SuccessCount)
 		content += fmt.Sprintf("Failed: %d\n", result.FailureCount)
-		content += fmt.Sprintf("Average Response Time: %.2f ms\n", float64(result.AvgResponseTime.Microseconds())/1000.0)
-		content += fmt.Sprintf("Minimum Response Time: %.2f ms\n", float64(result.MinResponseTime.Microseconds())/1000.0)
-		content += fmt.Sprintf("Maximum Response Time: %.2f ms\n", float64(result.MaxResponseTime.Microseconds())/1000.0)
+		content += fmt.Sprintf(
+			"Average Response Time: %.2f ms\n",
+			float64(result.AvgResponseTime.Microseconds())/1000.0,
+		)
+		content += fmt.Sprintf(
+			"Minimum Response Time: %.2f ms\n",
+			float64(result.MinResponseTime.Microseconds())/1000.0,
+		)
+		content += fmt.Sprintf(
+			"Maximum Response Time: %.2f ms\n",
+			float64(result.MaxResponseTime.Microseconds())/1000.0,
+		)
 		content += fmt.Sprintf("Requests Per Second: %.2f\n", result.RPS)
 		content += "\n"
 	}
 
 	// Write to file
-	err := os.WriteFile(filePath, []byte(content), 0644)
+	err := os.WriteFile(filePath, []byte(content), 0o644)
 	if err != nil {
 		fmt.Printf("Error writing to file: %v\n", err)
 		return
