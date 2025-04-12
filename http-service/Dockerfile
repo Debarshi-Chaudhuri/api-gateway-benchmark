@@ -6,11 +6,12 @@ WORKDIR /go/src/app
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
+# Copy source code - now includes all Go files in http-service directory
 COPY http-service/ ./http-service/
 
 # Build the binary with explicit architecture settings
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /go/bin/http-service http-service/main.go
+# Now the build command doesn't specify a single file since we have multiple Go files
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /go/bin/http-service ./http-service
 
 # Create a minimal runtime image
 FROM alpine:latest
